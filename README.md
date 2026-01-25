@@ -21,6 +21,22 @@ Built with [Bun](https://bun.sh/) for fast execution and modern TypeScript suppo
 
 ## Installation
 
+### From npm
+
+```bash
+# Install globally with npm
+npm install -g lldap-cli
+
+# Install globally with bun
+bun add -g lldap-cli
+
+# Run without installing (npx)
+npx lldap-cli --help
+
+# Run without installing (bunx)
+bunx lldap-cli --help
+```
+
 ### From Release
 
 Download the standalone binary for your platform from the [releases page](https://github.com/madeinoz67/lldap-cli/releases):
