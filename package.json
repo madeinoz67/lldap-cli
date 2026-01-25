@@ -1,6 +1,6 @@
 {
   "name": "lldap-cli",
-  "version": "1.2.3",
+  "version": "1.2.4",
   "description": "CLI tool for managing LLDAP (Lightweight LDAP) users, groups, and schema",
   "type": "module",
   "bin": {
