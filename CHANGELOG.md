@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.1] - 2026-01-25
+
+### Fixed
+
+- Fixed config building to not overwrite defaults with undefined CLI options
+- Fixed `.env` file loading - Bun doesn't auto-load .env files in all cases
+- Fixed password prompt to hide input when typing (using `stty -echo`)
+- Fixed password reading from `/dev/tty` to work with `eval $(...)` pattern
+- Added support for both environment variable naming conventions:
+  - `LLDAP_HTTP_URL` and `LLDAP_HTTPURL`
+  - `LLDAP_REFRESH_TOKEN` and `LLDAP_REFRESHTOKEN`
+
+### Changed
+
+- Password prompt now writes to stderr so it's visible when stdout is captured
+- Login command works correctly with `eval $(lldap-cli -W login)` pattern
+
 ## [1.0.0] - 2026-01-25
 
 ### Added

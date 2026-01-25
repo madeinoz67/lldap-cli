@@ -72,10 +72,12 @@ bun run dev -- user list
 export LLDAP_HTTP_URL="http://localhost:17170"
 export LLDAP_USERNAME="admin"
 export LLDAP_PASSWORD="your-password"
-# Or use tokens
+# Or use tokens (set automatically by eval $(lldap-cli -W login))
 export LLDAP_TOKEN="your-jwt-token"
 export LLDAP_REFRESH_TOKEN="your-refresh-token"
 ```
+
+You can also create a `.env` file in your working directory with these variables - it will be loaded automatically.
 
 ### Config File
 
@@ -101,12 +103,21 @@ lldap-cli -U http://localhost:17170 -D admin user list
 ### Authentication
 
 ```bash
-# Login and get tokens (eval to set environment variables)
-eval $(lldap-cli -D admin -w password login)
+# Login with password prompt (recommended - password hidden, tokens set automatically)
+eval $(lldap-cli -W login)
+
+# Login with password on command line (less secure)
+eval $(lldap-cli -w password login)
+
+# Login and save tokens to file (most secure for scripts)
+lldap-cli -W login -o ~/.lldap-tokens
+source ~/.lldap-tokens
 
 # Logout and invalidate tokens
 eval $(lldap-cli logout)
 ```
+
+The `-W` flag prompts for password securely (input hidden). The `eval $(...)` pattern automatically sets `LLDAP_TOKEN` and `LLDAP_REFRESHTOKEN` environment variables for subsequent commands.
 
 ### User Management
 

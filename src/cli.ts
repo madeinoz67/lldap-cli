@@ -73,7 +73,7 @@ program
     }
 
     if (opts.promptPassword) {
-      process.stdout.write('Login password: ');
+      process.stderr.write('Login password: ');
       const pwd = await readPassword();
       if (!pwd) {
         console.error('ERROR: No password provided');
@@ -760,16 +760,62 @@ objectClassGroupCommand
 // ============ HELPER FUNCTIONS ============
 
 async function readPassword(): Promise<string> {
-  const { execSync, spawnSync } = await import('child_process');
+  const { execSync } = await import('child_process');
+  const fs = await import('fs');
 
-  // Check if we're in a TTY - use proper interactive password reading
-  if (process.stdin.isTTY) {
-    // Interactive mode - use stty to disable echo and read directly
+  // Try to read from /dev/tty first (works even in subshells like eval $(...))
+  // This allows interactive password entry when stdout is captured
+  try {
+    if (fs.existsSync('/dev/tty')) {
+      // Open /dev/tty for reading - this is the controlling terminal
+      const ttyFd = fs.openSync('/dev/tty', 'r');
+      const ttyStream = fs.createReadStream('', { fd: ttyFd, autoClose: true });
+
+      // Disable echo on the terminal
+      execSync('stty -echo < /dev/tty', { stdio: 'pipe' });
+
+      const readline = await import('readline');
+      const rl = readline.createInterface({
+        input: ttyStream,
+        output: process.stderr, // Use stderr so it doesn't get captured by eval
+        terminal: false,
+      });
+
+      const password = await new Promise<string>((resolve) => {
+        rl.once('line', (line) => {
+          rl.close();
+          resolve(line);
+        });
+      });
+
+      // Re-enable echo and print newline to stderr
+      execSync('stty echo < /dev/tty', { stdio: 'pipe' });
+      process.stderr.write('\n');
+
+      // Close the stream and file descriptor explicitly
+      ttyStream.destroy();
+      try {
+        fs.closeSync(ttyFd);
+      } catch {
+        // May already be closed by destroy
+      }
+
+      return password.trim();
+    }
+  } catch {
+    // /dev/tty not available, fall through to other methods
     try {
-      // Disable terminal echo
+      execSync('stty echo < /dev/tty', { stdio: 'pipe' });
+    } catch {
+      // Ignore
+    }
+  }
+
+  // Fallback: Check if stdin is a TTY
+  if (process.stdin.isTTY) {
+    try {
       execSync('stty -echo', { stdio: 'inherit' });
 
-      // Read line using native readline
       const readline = await import('readline');
       const rl = readline.createInterface({
         input: process.stdin,
@@ -784,13 +830,11 @@ async function readPassword(): Promise<string> {
         });
       });
 
-      // Re-enable echo and print newline
       execSync('stty echo', { stdio: 'inherit' });
       process.stdout.write('\n');
 
       return password.trim();
     } catch {
-      // Fallback: re-enable echo if something went wrong
       try {
         execSync('stty echo', { stdio: 'inherit' });
       } catch {
@@ -800,7 +844,7 @@ async function readPassword(): Promise<string> {
     }
   }
 
-  // Non-interactive mode (piped input) - read from stdin using text()
+  // Non-interactive mode (piped input) - read from stdin
   const text = await Bun.stdin.text();
   const firstLine = text.split('\n')[0] || '';
   return firstLine.trim();
