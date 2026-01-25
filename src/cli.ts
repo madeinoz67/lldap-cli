@@ -74,7 +74,12 @@ program
 
     if (opts.promptPassword) {
       process.stdout.write('Login password: ');
-      globalOptions.password = await readPassword();
+      const pwd = await readPassword();
+      if (!pwd) {
+        console.error('ERROR: No password provided');
+        process.exit(1);
+      }
+      globalOptions.password = pwd;
     }
   });
 
@@ -755,60 +760,50 @@ objectClassGroupCommand
 // ============ HELPER FUNCTIONS ============
 
 async function readPassword(): Promise<string> {
-  const { execSync } = await import('child_process');
+  const { execSync, spawnSync } = await import('child_process');
 
-  // Check if we're in a TTY
-  if (!process.stdin.isTTY) {
-    // Non-interactive mode - read from stdin
-    const stdin = Bun.stdin.stream();
-    const reader = stdin.getReader();
-    let password = '';
-
-    while (true) {
-      const { value, done } = await reader.read();
-      if (done) break;
-      const text = new TextDecoder().decode(value);
-      if (text.includes('\n') || text.includes('\r')) break;
-      password += text;
-    }
-
-    reader.releaseLock();
-    return password.trim();
-  }
-
-  // Interactive mode - disable echo for secure password entry
-  try {
-    // Disable terminal echo
-    execSync('stty -echo', { stdio: 'inherit' });
-
-    const stdin = Bun.stdin.stream();
-    const reader = stdin.getReader();
-    let password = '';
-
-    while (true) {
-      const { value, done } = await reader.read();
-      if (done) break;
-      const text = new TextDecoder().decode(value);
-      if (text.includes('\n') || text.includes('\r')) break;
-      password += text;
-    }
-
-    reader.releaseLock();
-
-    // Re-enable echo and print newline
-    execSync('stty echo', { stdio: 'inherit' });
-    process.stdout.write('\n');
-
-    return password.trim();
-  } catch {
-    // Fallback: re-enable echo if something went wrong
+  // Check if we're in a TTY - use proper interactive password reading
+  if (process.stdin.isTTY) {
+    // Interactive mode - use stty to disable echo and read directly
     try {
+      // Disable terminal echo
+      execSync('stty -echo', { stdio: 'inherit' });
+
+      // Read line using native readline
+      const readline = await import('readline');
+      const rl = readline.createInterface({
+        input: process.stdin,
+        output: process.stdout,
+        terminal: false,
+      });
+
+      const password = await new Promise<string>((resolve) => {
+        rl.once('line', (line) => {
+          rl.close();
+          resolve(line);
+        });
+      });
+
+      // Re-enable echo and print newline
       execSync('stty echo', { stdio: 'inherit' });
+      process.stdout.write('\n');
+
+      return password.trim();
     } catch {
-      // Ignore
+      // Fallback: re-enable echo if something went wrong
+      try {
+        execSync('stty echo', { stdio: 'inherit' });
+      } catch {
+        // Ignore
+      }
+      throw new Error('Failed to read password securely');
     }
-    throw new Error('Failed to read password securely');
   }
+
+  // Non-interactive mode (piped input) - read from stdin using text()
+  const text = await Bun.stdin.text();
+  const firstLine = text.split('\n')[0] || '';
+  return firstLine.trim();
 }
 
 function handleError(error: unknown): never {
