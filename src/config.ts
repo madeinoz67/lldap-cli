@@ -76,10 +76,15 @@ export function buildConfig(cliOptions: Partial<Config> = {}): Config {
   const configFile = cliOptions.configFile || process.env.LLDAP_CONFIG || '/etc/lldap.toml';
   const fileConfig = parseConfigFile(configFile);
 
+  // Filter out undefined values from cliOptions to avoid overwriting defaults
+  const filteredCliOptions = Object.fromEntries(
+    Object.entries(cliOptions).filter(([, v]) => v !== undefined)
+  ) as Partial<Config>;
+
   const config: Config = {
     ...DEFAULT_CONFIG,
     ...fileConfig,
-    ...cliOptions,
+    ...filteredCliOptions,
     endpoints: {
       auth: process.env.LLDAP_HTTPENDPOINT_AUTH || DEFAULT_CONFIG.endpoints.auth,
       graphql: process.env.LLDAP_HTTPENDPOINT_GRAPH || DEFAULT_CONFIG.endpoints.graphql,
