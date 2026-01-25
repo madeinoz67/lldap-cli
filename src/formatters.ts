@@ -10,6 +10,15 @@ export function formatUsersTable(users: User[]): string {
 }
 
 /**
+ * Format users as a compact table with just uid and email
+ */
+export function formatUsersCompactTable(users: User[]): string {
+  const headers = ['User ID', 'Email'];
+  const rows = users.map((u) => [u.id, u.email]);
+  return formatTable(headers, rows);
+}
+
+/**
  * Format groups as a table
  */
 export function formatGroupsTable(groups: Group[]): string {

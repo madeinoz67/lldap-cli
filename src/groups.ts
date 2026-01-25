@@ -45,6 +45,27 @@ export class GroupService {
   }
 
   /**
+   * Search groups by pattern (matches display name)
+   * Supports glob-style wildcards (* and ?)
+   */
+  async searchGroups(pattern: string): Promise<Group[]> {
+    const groups = await this.getGroups();
+    const regex = this.globToRegex(pattern);
+    return groups.filter((g) => regex.test(g.displayName));
+  }
+
+  /**
+   * Convert glob pattern to regex
+   */
+  private globToRegex(pattern: string): RegExp {
+    const escaped = pattern
+      .replace(/[.+^${}()|[\]\\]/g, '\\$&')  // Escape regex special chars
+      .replace(/\*/g, '.*')                    // * -> .*
+      .replace(/\?/g, '.');                    // ? -> .
+    return new RegExp(`^${escaped}$`, 'i');    // Case insensitive, full match
+  }
+
+  /**
    * List user IDs in a group
    */
   async listUserIdsByGroupName(groupName: string): Promise<string[]> {

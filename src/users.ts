@@ -50,6 +50,44 @@ export class UserService {
   }
 
   /**
+   * Search users by pattern (matches uid, email, or display name)
+   * Supports glob-style wildcards (* and ?)
+   */
+  async searchUsers(pattern: string): Promise<User[]> {
+    const users = await this.getUsers();
+    const regex = this.globToRegex(pattern);
+    return users.filter(
+      (u) =>
+        regex.test(u.id) ||
+        regex.test(u.email) ||
+        regex.test(u.displayName || '')
+    );
+  }
+
+  /**
+   * Get users filtered by group membership
+   */
+  async getUsersByGroup(groupName: string): Promise<User[]> {
+    // Get all users with their groups
+    const query = '{users{id creationDate uuid email displayName firstName lastName groups{displayName}}}';
+    const data = await this.client.query<{ users: Array<User & { groups: Array<{ displayName: string }> }> }>(query);
+    return data.users
+      .filter((u) => u.groups.some((g) => g.displayName.toLowerCase() === groupName.toLowerCase()))
+      .map(({ groups, ...user }) => user);
+  }
+
+  /**
+   * Convert glob pattern to regex
+   */
+  private globToRegex(pattern: string): RegExp {
+    const escaped = pattern
+      .replace(/[.+^${}()|[\]\\]/g, '\\$&')  // Escape regex special chars
+      .replace(/\*/g, '.*')                    // * -> .*
+      .replace(/\?/g, '.');                    // ? -> .
+    return new RegExp(`^${escaped}$`, 'i');    // Case insensitive, full match
+  }
+
+  /**
    * Get user ID by email
    */
   async getUserIdByEmail(email: string): Promise<string | null> {

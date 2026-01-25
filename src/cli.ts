@@ -16,6 +16,7 @@ import {
 import type { Config, MutationType, AttributeType } from './types';
 import { CliError } from './errors';
 import { ExitCode } from './exitCodes';
+import packageJson from '../package.json';
 
 // Load .env file if it exists (Bun doesn't auto-load .env in all cases)
 function loadEnvFile(): void {
@@ -44,20 +45,45 @@ loadEnvFile();
 
 const program = new Command();
 
+// Application metadata - read from package.json
+const APP_NAME = packageJson.name;
+const APP_VERSION = packageJson.version;
+const APP_AUTHOR = packageJson.author;
+
 // Global options storage
 let globalOptions: Partial<Config> = {};
+let quietMode = false;
+
+/**
+ * Print application header (unless quiet mode)
+ */
+function printHeader(): void {
+  if (!quietMode) {
+    console.error(`${APP_NAME} v${APP_VERSION} - ${APP_AUTHOR}`);
+    console.error('');
+  }
+}
 
 program
-  .name('lldap-cli')
+  .name(APP_NAME)
   .description('CLI tool for managing LLDAP (Lightweight LDAP) users, groups, and schema')
-  .version('1.0.2')
+  .version(APP_VERSION, '-V, --version', 'Output the version number')
+  .addHelpText('beforeAll', `${APP_NAME} v${APP_VERSION} - ${APP_AUTHOR}\n`)
   .option('-H, --http-url <url>', 'HTTP base URL of the LLDAP management interface')
-  .option('-D, --username <username>', 'Username of the admin account')
+  .option('-u, --username <username>', 'Username of the admin account')
   .option('-t, --token <token>', 'Authentication token (prefer LLDAP_TOKEN env var)')
   .option('-r, --refresh-token <token>', 'Refresh token (prefer LLDAP_REFRESHTOKEN env var)')
+  .option('-q, --quiet', 'Suppress header and non-essential output')
   .option('--debug', 'Enable debug output (WARNING: may expose sensitive info in logs)')
   .hook('preAction', async (thisCommand) => {
     const opts = thisCommand.opts();
+
+    // Set quiet mode first
+    quietMode = opts.quiet || false;
+
+    // Print header (unless quiet)
+    printHeader();
+
     globalOptions = {
       httpUrl: opts.httpUrl,
       username: opts.username,
@@ -164,24 +190,54 @@ const userCommand = program.command('user').description('User management command
 
 userCommand
   .command('list [field]')
-  .description('List users (field: uid or email)')
-  .action(async (field = 'uid') => {
+  .description('List users (field: uid, email, or all)')
+  .option('-g, --group <name>', 'Filter by group membership')
+  .action(async (field = 'uid', opts) => {
     try {
       const config = buildConfig(globalOptions);
       const client = new LldapClient(config);
       const userService = new UserService(client);
 
+      // Get users, optionally filtered by group
+      let users = opts.group
+        ? await userService.getUsersByGroup(opts.group)
+        : await userService.getUsers();
+
       let output: string;
       if (field === 'uid') {
-        output = formatList(await userService.listUserIds());
+        output = formatList(users.map((u) => u.id));
       } else if (field === 'email') {
-        output = formatList(await userService.listUserEmails());
-      } else {
-        const users = await userService.getUsers();
+        output = formatList(users.map((u) => u.email).sort());
+      } else if (field === 'all') {
         output = formatUsersTable(users);
+      } else {
+        console.error(`ERROR: Unknown field '${field}'. Use: uid, email, or all`);
+        process.exit(ExitCode.USAGE);
       }
 
       console.log(output);
+      await client.cleanup();
+    } catch (error) {
+      handleError(error);
+    }
+  });
+
+userCommand
+  .command('search <pattern>')
+  .description('Search users by pattern (uid, email, or display name). Supports * and ? wildcards')
+  .action(async (pattern) => {
+    try {
+      const config = buildConfig(globalOptions);
+      const client = new LldapClient(config);
+      const userService = new UserService(client);
+
+      const users = await userService.searchUsers(pattern);
+      if (users.length === 0) {
+        console.error(`No users found matching: ${pattern}`);
+        process.exit(ExitCode.SUCCESS);
+      }
+
+      console.log(formatUsersTable(users));
       await client.cleanup();
     } catch (error) {
       handleError(error);
@@ -420,6 +476,28 @@ groupCommand
       const groupService = new GroupService(client);
 
       const groups = await groupService.getGroups();
+      console.log(formatGroupsTable(groups));
+      await client.cleanup();
+    } catch (error) {
+      handleError(error);
+    }
+  });
+
+groupCommand
+  .command('search <pattern>')
+  .description('Search groups by pattern. Supports * and ? wildcards')
+  .action(async (pattern) => {
+    try {
+      const config = buildConfig(globalOptions);
+      const client = new LldapClient(config);
+      const groupService = new GroupService(client);
+
+      const groups = await groupService.searchGroups(pattern);
+      if (groups.length === 0) {
+        console.error(`No groups found matching: ${pattern}`);
+        process.exit(ExitCode.SUCCESS);
+      }
+
       console.log(formatGroupsTable(groups));
       await client.cleanup();
     } catch (error) {
@@ -775,8 +853,8 @@ async function readPassword(): Promise<string> {
     if (fs.existsSync('/dev/tty')) {
       // Open /dev/tty for reading - this is the controlling terminal
       const ttyFd = fs.openSync('/dev/tty', 'r');
-      // Use autoClose: false so we control when the fd is closed
-      const ttyStream = fs.createReadStream('', { fd: ttyFd, autoClose: false });
+      // Let autoClose handle fd cleanup to avoid EBADF errors
+      const ttyStream = fs.createReadStream('', { fd: ttyFd, autoClose: true });
 
       // Disable echo on the terminal
       execSync('stty -echo < /dev/tty', { stdio: 'pipe' });
@@ -799,10 +877,8 @@ async function readPassword(): Promise<string> {
       execSync('stty echo < /dev/tty', { stdio: 'pipe' });
       process.stderr.write('\n');
 
-      // Close the stream first (doesn't close fd since autoClose: false)
+      // Just destroy the stream - autoClose will handle the fd
       ttyStream.destroy();
-      // Now close the file descriptor
-      fs.closeSync(ttyFd);
 
       return password.trim();
     }
@@ -855,18 +931,16 @@ async function readPassword(): Promise<string> {
 }
 
 function handleError(error: unknown): never {
-  let exitCode = ExitCode.ERROR;
-
   if (error instanceof CliError) {
     console.error(`ERROR: ${error.message}`);
-    exitCode = error.exitCode;
+    process.exit(error.exitCode);
   } else if (error instanceof Error) {
     console.error(`ERROR: ${error.message}`);
   } else {
     console.error('ERROR: An unknown error occurred');
   }
 
-  process.exit(exitCode);
+  process.exit(ExitCode.ERROR);
 }
 
 // Run the CLI

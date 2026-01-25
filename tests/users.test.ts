@@ -237,4 +237,109 @@ describe('UserService', () => {
     const body = JSON.parse(capturedBody);
     expect(body.variables.userId).toBe('jsmith');
   });
+
+  test('searchUsers matches by uid', async () => {
+    setupMockFetch({ users: mockUsers });
+
+    const client = new LldapClient(mockConfig);
+    const userService = new UserService(client);
+    const users = await userService.searchUsers('jsmith');
+
+    expect(users).toHaveLength(1);
+    expect(users[0].id).toBe('jsmith');
+  });
+
+  test('searchUsers matches by email', async () => {
+    setupMockFetch({ users: mockUsers });
+
+    const client = new LldapClient(mockConfig);
+    const userService = new UserService(client);
+    const users = await userService.searchUsers('jane@example.com');
+
+    expect(users).toHaveLength(1);
+    expect(users[0].id).toBe('jdoe');
+  });
+
+  test('searchUsers matches by display name', async () => {
+    setupMockFetch({ users: mockUsers });
+
+    const client = new LldapClient(mockConfig);
+    const userService = new UserService(client);
+    const users = await userService.searchUsers('John Smith');
+
+    expect(users).toHaveLength(1);
+    expect(users[0].id).toBe('jsmith');
+  });
+
+  test('searchUsers supports wildcard *', async () => {
+    setupMockFetch({ users: mockUsers });
+
+    const client = new LldapClient(mockConfig);
+    const userService = new UserService(client);
+    const users = await userService.searchUsers('j*');
+
+    expect(users).toHaveLength(2);
+  });
+
+  test('searchUsers supports wildcard ?', async () => {
+    setupMockFetch({ users: mockUsers });
+
+    const client = new LldapClient(mockConfig);
+    const userService = new UserService(client);
+    const users = await userService.searchUsers('jdo?');
+
+    expect(users).toHaveLength(1);
+    expect(users[0].id).toBe('jdoe');
+  });
+
+  test('searchUsers is case insensitive', async () => {
+    setupMockFetch({ users: mockUsers });
+
+    const client = new LldapClient(mockConfig);
+    const userService = new UserService(client);
+    const users = await userService.searchUsers('JSMITH');
+
+    expect(users).toHaveLength(1);
+    expect(users[0].id).toBe('jsmith');
+  });
+
+  test('searchUsers returns empty for no matches', async () => {
+    setupMockFetch({ users: mockUsers });
+
+    const client = new LldapClient(mockConfig);
+    const userService = new UserService(client);
+    const users = await userService.searchUsers('nonexistent');
+
+    expect(users).toHaveLength(0);
+  });
+
+  test('getUsersByGroup filters by group membership', async () => {
+    const usersWithGroups = [
+      { ...mockUsers[0], groups: [{ displayName: 'admins' }] },
+      { ...mockUsers[1], groups: [{ displayName: 'users' }] },
+    ];
+    setupMockFetch({ users: usersWithGroups });
+
+    const client = new LldapClient(mockConfig);
+    const userService = new UserService(client);
+    const users = await userService.getUsersByGroup('admins');
+
+    expect(users).toHaveLength(1);
+    expect(users[0].id).toBe('jsmith');
+  });
+
+  test('getUsersByGroup is case insensitive', async () => {
+    const usersWithGroups = [
+      { ...mockUsers[0], groups: [{ displayName: 'Admins' }] },
+      { ...mockUsers[1], groups: [{ displayName: 'users' }] },
+    ];
+    setupMockFetch({ users: usersWithGroups });
+
+    const client = new LldapClient(mockConfig);
+    const userService = new UserService(client);
+    const users = await userService.getUsersByGroup('ADMINS');
+
+    expect(users).toHaveLength(1);
+    expect(users[0].id).toBe('jsmith');
+  });
 });

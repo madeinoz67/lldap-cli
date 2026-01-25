@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.3] - 2026-01-25
+
+### Added
+
+- `user list all` option to display users in table format (ID, email, display name)
+- `user search <pattern>` command with glob-style wildcards (`*` and `?`)
+  - Searches by uid, email, or display name (case insensitive)
+- `user list --group <name>` option to filter users by group membership
+- `group search <pattern>` command with glob-style wildcards (`*` and `?`)
+- Application header showing name, version, and author on all commands and help
+- `-q, --quiet` global option to suppress header and non-essential output
+- `-V, --version` option to display version number
+
+### Changed
+
+- **BREAKING**: Renamed `-D` to `-u` for username flag (more intuitive)
+  - Old: `lldap-cli -D admin user list`
+  - New: `lldap-cli -u admin user list`
+- Version now read from package.json (single source of truth)
+
 ## [1.0.2] - 2026-01-25
 
 ### Added

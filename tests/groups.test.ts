@@ -185,4 +185,57 @@ describe('GroupService', () => {
     const body = JSON.parse(capturedBody);
     expect(body.variables.id).toBe(1);
   });
+
+  test('searchGroups matches by display name', async () => {
+    setupMockFetch({ groups: mockGroups });
+
+    const client = new LldapClient(mockConfig);
+    const groupService = new GroupService(client);
+    const groups = await groupService.searchGroups('admins');
+
+    expect(groups).toHaveLength(1);
+    expect(groups[0].displayName).toBe('admins');
+  });
+
+  test('searchGroups supports wildcard *', async () => {
+    setupMockFetch({ groups: mockGroups });
+
+    const client = new LldapClient(mockConfig);
+    const groupService = new GroupService(client);
+    const groups = await groupService.searchGroups('*s');
+
+    expect(groups).toHaveLength(2);
+  });
+
+  test('searchGroups supports wildcard ?', async () => {
+    setupMockFetch({ groups: mockGroups });
+
+    const client = new LldapClient(mockConfig);
+    const groupService = new GroupService(client);
+    const groups = await groupService.searchGroups('user?');
+
+    expect(groups).toHaveLength(1);
+    expect(groups[0].displayName).toBe('users');
+  });
+
+  test('searchGroups is case insensitive', async () => {
+    setupMockFetch({ groups: mockGroups });
+
+    const client = new LldapClient(mockConfig);
+    const groupService = new GroupService(client);
+    const groups = await groupService.searchGroups('ADMINS');
+
+    expect(groups).toHaveLength(1);
+    expect(groups[0].displayName).toBe('admins');
+  });
+
+  test('searchGroups returns empty for no matches', async () => {
+    setupMockFetch({ groups: mockGroups });
+
+    const client = new LldapClient(mockConfig);
+    const groupService = new GroupService(client);
+    const groups = await groupService.searchGroups('nonexistent');
+
+    expect(groups).toHaveLength(0);
+  });
 });

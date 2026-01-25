@@ -72,7 +72,7 @@ bun run dev -- user list
 export LLDAP_HTTP_URL="http://localhost:17170"
 export LLDAP_USERNAME="admin"
 export LLDAP_PASSWORD="your-password"
-# Or use tokens (set automatically by eval $(lldap-cli -W login))
+# Or use tokens (set automatically by eval $(lldap-cli login -p))
 export LLDAP_TOKEN="your-jwt-token"
 export LLDAP_REFRESH_TOKEN="your-refresh-token"
 ```
@@ -95,7 +95,7 @@ Create `~/.config/lldap-cli/config.json`:
 CLI options override environment variables and config file:
 
 ```bash
-lldap-cli -U http://localhost:17170 -D admin user list
+lldap-cli -H http://localhost:17170 -u admin user list
 ```
 
 ## Usage
@@ -123,9 +123,17 @@ The `-p` flag prompts for password securely (input hidden). The `eval $(...)` pa
 
 ```bash
 # List users
-lldap-cli user list          # List user IDs
-lldap-cli user list email    # List user emails
-lldap-cli user info          # Show all users in table format
+lldap-cli user list              # List user IDs (default)
+lldap-cli user list email        # List user emails
+lldap-cli user list all          # Table with ID, email, display name
+lldap-cli user list -g admins    # List users in 'admins' group
+lldap-cli user list all -g staff # Table of users in 'staff' group
+lldap-cli user info              # Show detailed user info
+
+# Search users (supports * and ? wildcards)
+lldap-cli user search john       # Search by uid, email, or display name
+lldap-cli user search "*@corp.com"  # Find users with corp.com email
+lldap-cli user search "svc_*"    # Find service accounts
 
 # Create a user
 lldap-cli user add jsmith john@example.com -d "John Smith" -f John -l Smith
@@ -157,6 +165,10 @@ lldap-cli user group del jsmith "mail users"
 ```bash
 # List groups
 lldap-cli group list
+
+# Search groups (supports * and ? wildcards)
+lldap-cli group search admin*    # Find groups starting with 'admin'
+lldap-cli group search "*users"  # Find groups ending with 'users'
 
 # Create a group
 lldap-cli group add "mail users"
@@ -222,9 +234,10 @@ When adding schema attributes, use one of:
 | Option | Description |
 |--------|-------------|
 | `-H, --http-url <url>` | LLDAP HTTP URL |
-| `-D, --username <user>` | Username for authentication |
+| `-u, --username <user>` | Username for authentication |
 | `-t, --token <token>` | JWT access token |
 | `-r, --refresh-token <token>` | JWT refresh token |
+| `-q, --quiet` | Suppress header and non-essential output |
 | `--debug` | Enable debug output (WARNING: may expose sensitive info) |
 | `-h, --help` | Show help |
 | `-V, --version` | Show version |
