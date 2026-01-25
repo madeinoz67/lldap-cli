@@ -775,7 +775,8 @@ async function readPassword(): Promise<string> {
     if (fs.existsSync('/dev/tty')) {
       // Open /dev/tty for reading - this is the controlling terminal
       const ttyFd = fs.openSync('/dev/tty', 'r');
-      const ttyStream = fs.createReadStream('', { fd: ttyFd, autoClose: true });
+      // Use autoClose: false so we control when the fd is closed
+      const ttyStream = fs.createReadStream('', { fd: ttyFd, autoClose: false });
 
       // Disable echo on the terminal
       execSync('stty -echo < /dev/tty', { stdio: 'pipe' });
@@ -798,13 +799,10 @@ async function readPassword(): Promise<string> {
       execSync('stty echo < /dev/tty', { stdio: 'pipe' });
       process.stderr.write('\n');
 
-      // Close the stream and file descriptor explicitly
+      // Close the stream first (doesn't close fd since autoClose: false)
       ttyStream.destroy();
-      try {
-        fs.closeSync(ttyFd);
-      } catch {
-        // May already be closed by destroy
-      }
+      // Now close the file descriptor
+      fs.closeSync(ttyFd);
 
       return password.trim();
     }
