@@ -48,10 +48,9 @@ let globalOptions: Partial<Config> = {};
 program
   .name('lldap-cli')
   .description('CLI tool for managing LLDAP (Lightweight LDAP) users, groups, and schema')
-  .version('1.0.0')
+  .version('1.0.1')
   .option('-H, --http-url <url>', 'HTTP base URL of the LLDAP management interface')
   .option('-D, --username <username>', 'Username of the admin account')
-  .option('-W, --prompt-password', 'Prompt for password (recommended over environment variable)')
   .option('-t, --token <token>', 'Authentication token (prefer LLDAP_TOKEN env var)')
   .option('-r, --refresh-token <token>', 'Refresh token (prefer LLDAP_REFRESHTOKEN env var)')
   .option('--debug', 'Enable debug output (WARNING: may expose sensitive info in logs)')
@@ -71,16 +70,6 @@ program
       console.error('Do not use in production or share debug output publicly.');
       LldapClient.setDebugEnabled(true);
     }
-
-    if (opts.promptPassword) {
-      process.stderr.write('Login password: ');
-      const pwd = await readPassword();
-      if (!pwd) {
-        console.error('ERROR: No password provided');
-        process.exit(1);
-      }
-      globalOptions.password = pwd;
-    }
   });
 
 // ============ LOGIN ============
@@ -88,10 +77,25 @@ program
 program
   .command('login')
   .description('Authenticate and print tokens for subsequent commands')
+  .option('-W, --prompt-password', 'Prompt for password (recommended over environment variable)')
+  .option('-w, --password <password>', 'Password (prefer -W or LLDAP_PASSWORD env var)')
   .option('-o, --output <file>', 'Write tokens to file instead of stdout (more secure)')
   .option('-q, --quiet', 'Suppress security warnings')
   .action(async (opts) => {
     try {
+      // Handle password from login command options
+      if (opts.promptPassword) {
+        process.stderr.write('Login password: ');
+        const pwd = await readPassword();
+        if (!pwd) {
+          console.error('ERROR: No password provided');
+          process.exit(1);
+        }
+        globalOptions.password = pwd;
+      } else if (opts.password) {
+        globalOptions.password = opts.password;
+      }
+
       const config = buildConfig(globalOptions);
       const client = new LldapClient(config);
 

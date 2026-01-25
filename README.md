@@ -104,13 +104,13 @@ lldap-cli -U http://localhost:17170 -D admin user list
 
 ```bash
 # Login with password prompt (recommended - password hidden, tokens set automatically)
-eval $(lldap-cli -W login)
+eval $(lldap-cli login -W)
 
 # Login with password on command line (less secure)
-eval $(lldap-cli -w password login)
+eval $(lldap-cli login -w password)
 
 # Login and save tokens to file (most secure for scripts)
-lldap-cli -W login -o ~/.lldap-tokens
+lldap-cli login -W -o ~/.lldap-tokens
 source ~/.lldap-tokens
 
 # Logout and invalidate tokens
@@ -221,15 +221,22 @@ When adding schema attributes, use one of:
 
 | Option | Description |
 |--------|-------------|
-| `-U, --url <url>` | LLDAP HTTP URL |
+| `-H, --http-url <url>` | LLDAP HTTP URL |
 | `-D, --username <user>` | Username for authentication |
-| `-w, --password <pass>` | Password for authentication |
-| `-W, --prompt-password` | Prompt for password |
 | `-t, --token <token>` | JWT access token |
 | `-r, --refresh-token <token>` | JWT refresh token |
 | `--debug` | Enable debug output (WARNING: may expose sensitive info) |
 | `-h, --help` | Show help |
 | `-V, --version` | Show version |
+
+### Login Options
+
+| Option | Description |
+|--------|-------------|
+| `-W, --prompt-password` | Prompt for password (input hidden) |
+| `-w, --password <pass>` | Password on command line (less secure) |
+| `-o, --output <file>` | Write tokens to file instead of stdout |
+| `-q, --quiet` | Suppress security warnings |
 
 ## Programmatic Usage
 

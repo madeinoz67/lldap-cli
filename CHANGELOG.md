@@ -19,8 +19,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **BREAKING**: Moved `-W` and `-w` options from global to `login` command
+  - Old: `lldap-cli -W login`
+  - New: `lldap-cli login -W`
 - Password prompt now writes to stderr so it's visible when stdout is captured
-- Login command works correctly with `eval $(lldap-cli -W login)` pattern
+- Login command works correctly with `eval $(lldap-cli login -W)` pattern
 
 ## [1.0.0] - 2026-01-25
 
