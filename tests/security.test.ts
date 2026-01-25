@@ -133,6 +133,68 @@ describe('Security Features', () => {
         userService.setPassword('   ', 'ValidPass1', 'http://localhost:17170', createTestToken())
       ).rejects.toThrow('cannot be empty');
     });
+
+    test('email validation resists ReDoS attacks (CWE-1333)', () => {
+      const client = new LldapClient(mockConfig);
+
+      // Craft malicious input that would cause polynomial backtracking
+      // with the old regex: /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+      // Attack string: starts with '!@!.' followed by '!.' repetitions
+      // Keep under 254 chars to bypass length check and test actual validation
+      const maliciousEmail = '!@!.' + '!.'.repeat(100); // 204 chars
+
+      const startTime = performance.now();
+
+      // Should reject quickly (< 100ms) rather than hanging
+      expect(() => {
+        client.validateEmail(maliciousEmail);
+      }).toThrow('Invalid email format');
+
+      const elapsed = performance.now() - startTime;
+
+      // If the old vulnerable regex was used, this would take longer
+      // The fix should complete in milliseconds
+      expect(elapsed).toBeLessThan(100);
+    }, 1000); // 1 second timeout - fails fast if ReDoS vulnerability exists
+
+    test('email validation length check prevents large ReDoS payloads', () => {
+      const client = new LldapClient(mockConfig);
+
+      // Even larger payloads are blocked by length validation first
+      const largePayload = '!@!.' + '!.'.repeat(50000);
+
+      expect(() => {
+        client.validateEmail(largePayload);
+      }).toThrow('exceeds maximum length');
+    });
+
+    test('email validation accepts valid emails', () => {
+      const client = new LldapClient(mockConfig);
+
+      // These should not throw
+      expect(() => client.validateEmail('user@example.com')).not.toThrow();
+      expect(() => client.validateEmail('user.name@example.co.uk')).not.toThrow();
+      expect(() => client.validateEmail('user+tag@example.org')).not.toThrow();
+    });
+
+    test('email validation rejects invalid emails', () => {
+      const client = new LldapClient(mockConfig);
+
+      // Missing @
+      expect(() => client.validateEmail('userexample.com')).toThrow('Invalid email format');
+      // Missing domain
+      expect(() => client.validateEmail('user@')).toThrow('Invalid email format');
+      // Missing local part
+      expect(() => client.validateEmail('@example.com')).toThrow('Invalid email format');
+      // No dot in domain
+      expect(() => client.validateEmail('user@localhost')).toThrow('Invalid email format');
+      // Domain starts with dot
+      expect(() => client.validateEmail('user@.example.com')).toThrow('Invalid email format');
+      // Domain ends with dot
+      expect(() => client.validateEmail('user@example.')).toThrow('Invalid email format');
+      // Contains whitespace
+      expect(() => client.validateEmail('user @example.com')).toThrow('Invalid email format');
+    });
   });
 
   describe('Token Expiration', () => {
