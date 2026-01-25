@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 - Simplify changelog to user-facing changes only
+- Add explicit permissions to all workflow jobs
 
 ## [1.2.1] - 2026-01-25
 
