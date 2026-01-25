@@ -112,6 +112,26 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Verify CHANGELOG updated for this version
+        run: |
+          # Extract version from tag (e.g., v1.2.3 -> 1.2.3)
+          VERSION="${GITHUB_REF#refs/tags/v}"
+          echo "Checking CHANGELOG.md for version $VERSION..."
+
+          # Check if CHANGELOG.md contains an entry for this version
+          if grep -q "^\#\# \[$VERSION\]" CHANGELOG.md; then
+            echo "✅ Found changelog entry for version $VERSION"
+          else
+            echo "❌ ERROR: No changelog entry found for version $VERSION"
+            echo ""
+            echo "Please update CHANGELOG.md with an entry like:"
+            echo "## [$VERSION] - $(date +%Y-%m-%d)"
+            echo ""
+            echo "### Added/Changed/Fixed"
+            echo "- Your changes here"
+            exit 1
+          fi
+
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
         with:
