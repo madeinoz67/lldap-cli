@@ -4,7 +4,7 @@
   "description": "CLI tool for managing LLDAP (Lightweight LDAP) users, groups, and schema",
   "type": "module",
   "bin": {
-    "lldap-cli": "./dist/cli.js"
+    "lldap-cli": "dist/cli.js"
   },
   "files": [
     "dist",
