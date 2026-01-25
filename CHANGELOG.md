@@ -7,138 +7,96 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Added
 
-- CI validation that CHANGELOG.md is updated before release
+### Fixed
+
+
+- Remove conflicting git-cliff args for changelog generation
+
+## [1.2.0] - 2026-01-25
+
+
+### CI/CD
+
+
+- Add CHANGELOG validation before release
+- Add Unreleased section to CHANGELOG workflow
+- Automate changelog generation with git-cliff
+- Add Homebrew tap publishing
+- Move changelog generation to main branch merges
+
+
+### Documentation
+
+
+- Add CodeQL security badge to README
+- Add release management documentation
+
+
+### Miscellaneous
+
+
+- Update .gitignore
 
 ## [1.1.2] - 2026-01-25
 
-### Changed
 
-- CI/CD npm publish now uses OIDC trusted publishing (more secure, no tokens)
+### Added
+
+
+- Use npm OIDC trusted publishing instead of tokens
+
+
+### Miscellaneous
+
+
+- Bump to v1.1.2 for OIDC trusted publishing
 
 ## [1.1.1] - 2026-01-25
 
-### Fixed
 
-- CI/CD npm publish authentication using setup-node action
+### Miscellaneous
+
+
+- Bump to v1.1.1 for CI npm publish fix
 
 ## [1.1.0] - 2026-01-25
 
-### Added
-
-- `user list all` option to display users in table format (ID, email, display name)
-- `user search <pattern>` command with glob-style wildcards (`*` and `?`)
-  - Searches by uid, email, or display name (case insensitive)
-- `user list --group <name>` option to filter users by group membership
-- `group search <pattern>` command with glob-style wildcards (`*` and `?`)
-- Application header showing name, version, and author on all commands and help
-- `-q, --quiet` global option to suppress header and non-essential output
-- `-V, --version` option to display version number
-- npm/bunx installation support - published to npm registry
-
-### Changed
-
-- **BREAKING**: Renamed `-D` to `-u` for username flag (more intuitive)
-  - Old: `lldap-cli -D admin user list`
-  - New: `lldap-cli -u admin user list`
-- Version now read from package.json (single source of truth)
-
-## [1.0.2] - 2026-01-25
 
 ### Added
 
-- Standard exit codes following BSD sysexits.h conventions:
-  - `0` - Success
-  - `1` - General error
-  - `64` - Usage error (invalid arguments)
-  - `69` - Service unavailable (server down)
-  - `74` - I/O error (file not found)
-  - `75` - Temporary failure (rate limited, retry)
-  - `77` - Permission denied (auth failure)
-  - `78` - Configuration error
-- Custom error classes (`AuthError`, `ConfigError`, `UsageError`, etc.)
-- Exported errors and exit codes for programmatic usage
 
-## [1.0.1] - 2026-01-25
+- Bump to v1.1.0 with npm installation support
+
 
 ### Fixed
 
-- Fixed config building to not overwrite defaults with undefined CLI options
-- Fixed `.env` file loading - Bun doesn't auto-load .env files in all cases
-- Fixed password prompt to hide input when typing (using `stty -echo`)
-- Fixed password reading from `/dev/tty` to work with `eval $(...)` pattern
-- Added support for both environment variable naming conventions:
-  - `LLDAP_HTTP_URL` and `LLDAP_HTTPURL`
-  - `LLDAP_REFRESH_TOKEN` and `LLDAP_REFRESHTOKEN`
 
-### Changed
+- Lint errors and add npm publish to CI
+- Correct npm token interpolation in CI workflow
+- Use setup-node action for npm auth
 
-- **BREAKING**: Moved `-W` and `-w` options from global to `login` command
-  - Old: `lldap-cli -W login`
-  - New: `lldap-cli login -p`
-- **BREAKING**: Renamed `-W` to `-p` for more intuitive password prompt flag
-  - Old: `lldap-cli login -W`
-  - New: `lldap-cli login -p`
-- Password prompt now writes to stderr so it's visible when stdout is captured
-- Login command works correctly with `eval $(lldap-cli login -p)` pattern
 
-## [1.0.0] - 2026-01-25
+### Miscellaneous
+
+
+- Fix bin path per npm pkg fix
+
+## [1.0.3] - 2026-01-25
+
 
 ### Added
 
-- **User Management**
-  - List all users with `user list`
-  - Get user details with `user get <userId>`
-  - Create users with `user create <userId> <email>`
-  - Delete users with `user delete <userId>`
-  - Set user passwords with `user set-password <userId>`
-  - Manage user attributes (set, clear, add, delete values)
 
-- **Group Management**
-  - List all groups with `group list`
-  - Get group details with `group get <groupId>`
-  - Create groups with `group create <name>`
-  - Delete groups with `group delete <groupId>`
-  - Add users to groups with `group add-user <groupId> <userId>`
-  - Remove users from groups with `group remove-user <groupId> <userId>`
-  - Manage group attributes
+- Add standard BSD exit codes for scripting
+- Add search, group filter, header and quiet mode (v1.0.3)
 
-- **Schema Management**
-  - List user schema attributes with `schema user-attrs`
-  - List group schema attributes with `schema group-attrs`
-  - Add custom attributes with `schema add-attr`
-  - Delete custom attributes with `schema del-attr`
 
-- **Authentication**
-  - Token-based authentication with JWT
-  - Automatic token refresh
-  - Session timeout protection (30-minute inactivity)
-  - Secure credential handling via environment variables or config file
+### Changed
 
-- **Security Features**
-  - Input validation and sanitization
-  - Command injection protection
-  - Password complexity requirements
-  - Rate limiting with exponential backoff
-  - Token expiration handling
-  - Path traversal protection
-  - Audit logging for security events
-  - Debug mode with sensitive data redaction
-  - Secure HTTP connection warnings
 
-- **Configuration**
-  - Environment variable support (`LLDAP_*`)
-  - Config file support (`~/.config/lldap-cli/config.json`)
-  - CLI option overrides
+- Rename login -W to -p for intuitive password prompt
 
-- **CI/CD**
-  - GitHub Actions workflow for lint, test, and build
-  - Security scanning with Trivy and TruffleHog
-  - Automated releases with standalone binaries for Linux and macOS
+## [1.0.0] - 2026-01-25
 
-### Security
 
-- Comprehensive security hardening based on red team analysis
-- 19 security issues addressed across CRITICAL, HIGH, MEDIUM, and LOW severity
-- 73 security and functionality tests with 140 assertions
