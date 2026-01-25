@@ -107,8 +107,15 @@ export class LldapClient {
    */
   validateEmail(email: string): void {
     this.validateInputLength(email, 'email', LldapClient.MAX_EMAIL_LENGTH);
-    // Basic email validation
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    // Basic email validation using atomic groups pattern to prevent ReDoS
+    // Split validation: local part, @, domain with at least one dot
+    const atIndex = email.indexOf('@');
+    if (atIndex < 1 || atIndex === email.length - 1) {
+      throw new UsageError('Invalid email format');
+    }
+    const domainPart = email.slice(atIndex + 1);
+    // Check for whitespace and basic structure
+    if (/\s/.test(email) || !domainPart.includes('.') || domainPart.startsWith('.') || domainPart.endsWith('.')) {
       throw new UsageError('Invalid email format');
     }
   }
