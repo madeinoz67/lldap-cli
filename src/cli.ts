@@ -199,7 +199,7 @@ userCommand
       const userService = new UserService(client);
 
       // Get users, optionally filtered by group
-      let users = opts.group
+      const users = opts.group
         ? await userService.getUsersByGroup(opts.group)
         : await userService.getUsers();
 

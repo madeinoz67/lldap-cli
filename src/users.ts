@@ -73,7 +73,7 @@ export class UserService {
     const data = await this.client.query<{ users: Array<User & { groups: Array<{ displayName: string }> }> }>(query);
     return data.users
       .filter((u) => u.groups.some((g) => g.displayName.toLowerCase() === groupName.toLowerCase()))
-      .map(({ groups, ...user }) => user);
+      .map(({ groups: _groups, ...user }) => user);
   }
 
   /**

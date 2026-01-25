@@ -6,6 +6,11 @@
   "bin": {
     "lldap-cli": "./dist/cli.js"
   },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
     "build": "bun build ./src/cli.ts --outdir ./dist --target node",
     "dev": "bun run ./src/cli.ts",
@@ -13,7 +18,8 @@
     "lint:fix": "eslint src tests --fix",
     "test": "bun test",
     "test:watch": "bun test --watch",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "bun run build"
   },
   "dependencies": {
     "commander": "^12.1.0"
@@ -32,8 +38,21 @@
     "ldap",
     "cli",
     "user-management",
-    "graphql"
+    "graphql",
+    "bun",
+    "typescript"
   ],
   "author": "Stephen Eaton",
-  "license": "MIT"
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/madeinoz67/lldap-cli.git"
+  },
+  "homepage": "https://github.com/madeinoz67/lldap-cli#readme",
+  "bugs": {
+    "url": "https://github.com/madeinoz67/lldap-cli/issues"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
 }
