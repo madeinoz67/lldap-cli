@@ -6,13 +6,15 @@ describe('buildConfig', () => {
   const originalStderr = console.error;
 
   beforeEach(() => {
-    // Clear LLDAP environment variables
+    // Clear LLDAP environment variables (both naming conventions)
     delete process.env.LLDAP_CONFIG;
     delete process.env.LLDAP_HTTPURL;
+    delete process.env.LLDAP_HTTP_URL;
     delete process.env.LLDAP_USERNAME;
     delete process.env.LLDAP_PASSWORD;
     delete process.env.LLDAP_TOKEN;
     delete process.env.LLDAP_REFRESHTOKEN;
+    delete process.env.LLDAP_REFRESH_TOKEN;
     delete process.env.LLDAP_HTTPENDPOINT_AUTH;
     delete process.env.LLDAP_HTTPENDPOINT_GRAPH;
     delete process.env.LLDAP_HTTPENDPOINT_LOGOUT;

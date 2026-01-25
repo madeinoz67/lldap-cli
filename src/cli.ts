@@ -1,5 +1,6 @@
 #!/usr/bin/env bun
 
+import { existsSync, readFileSync } from 'fs';
 import { Command } from 'commander';
 import { buildConfig } from './config';
 import { LldapClient } from './client';
@@ -13,6 +14,31 @@ import {
   formatList,
 } from './formatters';
 import type { Config, MutationType, AttributeType } from './types';
+
+// Load .env file if it exists (Bun doesn't auto-load .env in all cases)
+function loadEnvFile(): void {
+  const envPath = '.env';
+  if (existsSync(envPath)) {
+    const content = readFileSync(envPath, 'utf-8');
+    for (const line of content.split('\n')) {
+      const trimmed = line.trim();
+      if (!trimmed || trimmed.startsWith('#')) continue;
+      const match = trimmed.match(/^([^=]+)=(.*)$/);
+      if (match) {
+        const [, key, value] = match;
+        // Don't override existing environment variables
+        if (!process.env[key.trim()]) {
+          // Remove surrounding quotes if present
+          const cleanValue = value.trim().replace(/^["']|["']$/g, '');
+          process.env[key.trim()] = cleanValue;
+        }
+      }
+    }
+  }
+}
+
+// Load .env at startup
+loadEnvFile();
 
 const program = new Command();
 
@@ -729,27 +755,60 @@ objectClassGroupCommand
 // ============ HELPER FUNCTIONS ============
 
 async function readPassword(): Promise<string> {
-  // Use Bun's native readline for password input
-  const stdin = Bun.stdin.stream();
-  const reader = stdin.getReader();
-  let password = '';
+  const { execSync } = await import('child_process');
 
-  // Disable echo (this is a simplified version - in production you'd want proper TTY handling)
-  process.stdout.write('\n');
+  // Check if we're in a TTY
+  if (!process.stdin.isTTY) {
+    // Non-interactive mode - read from stdin
+    const stdin = Bun.stdin.stream();
+    const reader = stdin.getReader();
+    let password = '';
 
-  while (true) {
-    const { value, done } = await reader.read();
-    if (done) break;
-
-    const text = new TextDecoder().decode(value);
-    if (text.includes('\n') || text.includes('\r')) {
-      break;
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      const text = new TextDecoder().decode(value);
+      if (text.includes('\n') || text.includes('\r')) break;
+      password += text;
     }
-    password += text;
+
+    reader.releaseLock();
+    return password.trim();
   }
 
-  reader.releaseLock();
-  return password.trim();
+  // Interactive mode - disable echo for secure password entry
+  try {
+    // Disable terminal echo
+    execSync('stty -echo', { stdio: 'inherit' });
+
+    const stdin = Bun.stdin.stream();
+    const reader = stdin.getReader();
+    let password = '';
+
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      const text = new TextDecoder().decode(value);
+      if (text.includes('\n') || text.includes('\r')) break;
+      password += text;
+    }
+
+    reader.releaseLock();
+
+    // Re-enable echo and print newline
+    execSync('stty echo', { stdio: 'inherit' });
+    process.stdout.write('\n');
+
+    return password.trim();
+  } catch {
+    // Fallback: re-enable echo if something went wrong
+    try {
+      execSync('stty echo', { stdio: 'inherit' });
+    } catch {
+      // Ignore
+    }
+    throw new Error('Failed to read password securely');
+  }
 }
 
 function handleError(error: unknown): never {

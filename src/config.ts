@@ -93,12 +93,16 @@ export function buildConfig(cliOptions: Partial<Config> = {}): Config {
     },
   };
 
-  // Environment variables override
-  if (process.env.LLDAP_HTTPURL) config.httpUrl = process.env.LLDAP_HTTPURL;
+  // Environment variables override (support both naming conventions)
+  if (process.env.LLDAP_HTTP_URL || process.env.LLDAP_HTTPURL) {
+    config.httpUrl = process.env.LLDAP_HTTP_URL || process.env.LLDAP_HTTPURL || config.httpUrl;
+  }
   if (process.env.LLDAP_USERNAME) config.username = process.env.LLDAP_USERNAME;
   if (process.env.LLDAP_PASSWORD) config.password = process.env.LLDAP_PASSWORD;
   if (process.env.LLDAP_TOKEN) config.token = process.env.LLDAP_TOKEN;
-  if (process.env.LLDAP_REFRESHTOKEN) config.refreshToken = process.env.LLDAP_REFRESHTOKEN;
+  if (process.env.LLDAP_REFRESH_TOKEN || process.env.LLDAP_REFRESHTOKEN) {
+    config.refreshToken = process.env.LLDAP_REFRESH_TOKEN || process.env.LLDAP_REFRESHTOKEN;
+  }
 
   // CLI options override environment
   if (cliOptions.httpUrl) config.httpUrl = cliOptions.httpUrl;
