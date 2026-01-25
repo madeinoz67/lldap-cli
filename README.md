@@ -5,6 +5,7 @@ A TypeScript CLI tool for managing [LLDAP](https://github.com/lldap/lldap) (Ligh
 Built with [Bun](https://bun.sh/) for fast execution and modern TypeScript support.
 
 [![CI](https://github.com/madeinoz67/lldap-cli/actions/workflows/ci.yml/badge.svg)](https://github.com/madeinoz67/lldap-cli/actions/workflows/ci.yml)
+[![CodeQL](https://github.com/madeinoz67/lldap-cli/actions/workflows/github-code-scanning/codeql/badge.svg)](https://github.com/madeinoz67/lldap-cli/security/code-scanning)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Bun](https://img.shields.io/badge/Bun-%23000000.svg?style=flat&logo=bun&logoColor=white)](https://bun.sh/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=flat&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
