@@ -1,0 +1,37 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Bun
+bun.lockb
+
+# Test coverage
+coverage/
+
+# Compiled binaries
+lldap-cli-linux-*
+lldap-cli-darwin-*
+
+# Claude Code / Codanna
+.claude/
+.codanna/
+.codannaignore
+.fastembed_cache
+CLAUDE.md.codanna
