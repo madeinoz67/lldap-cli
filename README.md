@@ -104,20 +104,20 @@ lldap-cli -U http://localhost:17170 -D admin user list
 
 ```bash
 # Login with password prompt (recommended - password hidden, tokens set automatically)
-eval $(lldap-cli login -W)
+eval $(lldap-cli login -p)
 
 # Login with password on command line (less secure)
 eval $(lldap-cli login -w password)
 
 # Login and save tokens to file (most secure for scripts)
-lldap-cli login -W -o ~/.lldap-tokens
+lldap-cli login -p -o ~/.lldap-tokens
 source ~/.lldap-tokens
 
 # Logout and invalidate tokens
 eval $(lldap-cli logout)
 ```
 
-The `-W` flag prompts for password securely (input hidden). The `eval $(...)` pattern automatically sets `LLDAP_TOKEN` and `LLDAP_REFRESHTOKEN` environment variables for subsequent commands.
+The `-p` flag prompts for password securely (input hidden). The `eval $(...)` pattern automatically sets `LLDAP_TOKEN` and `LLDAP_REFRESHTOKEN` environment variables for subsequent commands.
 
 ### User Management
 
@@ -233,7 +233,7 @@ When adding schema attributes, use one of:
 
 | Option | Description |
 |--------|-------------|
-| `-W, --prompt-password` | Prompt for password (input hidden) |
+| `-p, --prompt-password` | Prompt for password (input hidden) |
 | `-w, --password <pass>` | Password on command line (less secure) |
 | `-o, --output <file>` | Write tokens to file instead of stdout |
 | `-q, --quiet` | Suppress security warnings |

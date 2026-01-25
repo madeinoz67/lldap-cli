@@ -77,8 +77,8 @@ program
 program
   .command('login')
   .description('Authenticate and print tokens for subsequent commands')
-  .option('-W, --prompt-password', 'Prompt for password (recommended over environment variable)')
-  .option('-w, --password <password>', 'Password (prefer -W or LLDAP_PASSWORD env var)')
+  .option('-p, --prompt-password', 'Prompt for password (recommended)')
+  .option('-w, --password <password>', 'Password (less secure than -p)')
   .option('-o, --output <file>', 'Write tokens to file instead of stdout (more secure)')
   .option('-q, --quiet', 'Suppress security warnings')
   .action(async (opts) => {
