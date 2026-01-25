@@ -8,6 +8,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 
+### CI/CD
+
+
+- Split changelog into unreleased (main) and full (release)
+
+
+### Documentation
+
+
+- Update CHANGELOG.md [skip ci]
+
+
 ### Fixed
 
 
