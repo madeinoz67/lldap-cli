@@ -165,6 +165,13 @@ jobs:
           bun build ./src/cli.ts --compile --outfile lldap-cli-darwin-x64 --target bun-darwin-x64
           bun build ./src/cli.ts --compile --outfile lldap-cli-darwin-arm64 --target bun-darwin-arm64
 
+      - name: Create tar.gz archives
+        run: |
+          tar -czf lldap-cli-linux-x64.tar.gz lldap-cli-linux-x64
+          tar -czf lldap-cli-linux-arm64.tar.gz lldap-cli-linux-arm64
+          tar -czf lldap-cli-darwin-x64.tar.gz lldap-cli-darwin-x64
+          tar -czf lldap-cli-darwin-arm64.tar.gz lldap-cli-darwin-arm64
+
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
@@ -174,6 +181,10 @@ jobs:
             lldap-cli-linux-arm64
             lldap-cli-darwin-x64
             lldap-cli-darwin-arm64
+            lldap-cli-linux-x64.tar.gz
+            lldap-cli-linux-arm64.tar.gz
+            lldap-cli-darwin-x64.tar.gz
+            lldap-cli-darwin-arm64.tar.gz
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -274,23 +285,23 @@ jobs:
         id: version
         run: echo "version=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
 
-      - name: Download release binaries and compute SHA256
+      - name: Download release archives and compute SHA256
         id: sha
         env:
           VERSION: ${{ steps.version.outputs.version }}
         run: |
           BASE_URL="https://github.com/madeinoz67/lldap-cli/releases/download/v${VERSION}"
 
-          # Download binaries and compute SHA256
-          curl -sL "${BASE_URL}/lldap-cli-darwin-arm64" -o darwin-arm64
-          curl -sL "${BASE_URL}/lldap-cli-darwin-x64" -o darwin-x64
-          curl -sL "${BASE_URL}/lldap-cli-linux-arm64" -o linux-arm64
-          curl -sL "${BASE_URL}/lldap-cli-linux-x64" -o linux-x64
+          # Download tar.gz archives and compute SHA256
+          curl -sL "${BASE_URL}/lldap-cli-darwin-arm64.tar.gz" -o darwin-arm64.tar.gz
+          curl -sL "${BASE_URL}/lldap-cli-darwin-x64.tar.gz" -o darwin-x64.tar.gz
+          curl -sL "${BASE_URL}/lldap-cli-linux-arm64.tar.gz" -o linux-arm64.tar.gz
+          curl -sL "${BASE_URL}/lldap-cli-linux-x64.tar.gz" -o linux-x64.tar.gz
 
-          echo "darwin_arm64=$(sha256sum darwin-arm64 | cut -d' ' -f1)" >> $GITHUB_OUTPUT
-          echo "darwin_x64=$(sha256sum darwin-x64 | cut -d' ' -f1)" >> $GITHUB_OUTPUT
-          echo "linux_arm64=$(sha256sum linux-arm64 | cut -d' ' -f1)" >> $GITHUB_OUTPUT
-          echo "linux_x64=$(sha256sum linux-x64 | cut -d' ' -f1)" >> $GITHUB_OUTPUT
+          echo "darwin_arm64=$(sha256sum darwin-arm64.tar.gz | cut -d' ' -f1)" >> $GITHUB_OUTPUT
+          echo "darwin_x64=$(sha256sum darwin-x64.tar.gz | cut -d' ' -f1)" >> $GITHUB_OUTPUT
+          echo "linux_arm64=$(sha256sum linux-arm64.tar.gz | cut -d' ' -f1)" >> $GITHUB_OUTPUT
+          echo "linux_x64=$(sha256sum linux-x64.tar.gz | cut -d' ' -f1)" >> $GITHUB_OUTPUT
 
       - name: Generate Homebrew formula
         env:
@@ -309,7 +320,7 @@ jobs:
 
             on_macos do
               on_arm do
-                url "https://github.com/madeinoz67/lldap-cli/releases/download/v#{version}/lldap-cli-darwin-arm64"
+                url "https://github.com/madeinoz67/lldap-cli/releases/download/v#{version}/lldap-cli-darwin-arm64.tar.gz"
                 sha256 "SHA_DARWIN_ARM64_PLACEHOLDER"
 
                 def install
@@ -317,7 +328,7 @@ jobs:
                 end
               end
               on_intel do
-                url "https://github.com/madeinoz67/lldap-cli/releases/download/v#{version}/lldap-cli-darwin-x64"
+                url "https://github.com/madeinoz67/lldap-cli/releases/download/v#{version}/lldap-cli-darwin-x64.tar.gz"
                 sha256 "SHA_DARWIN_X64_PLACEHOLDER"
 
                 def install
@@ -328,7 +339,7 @@ jobs:
 
             on_linux do
               on_arm do
-                url "https://github.com/madeinoz67/lldap-cli/releases/download/v#{version}/lldap-cli-linux-arm64"
+                url "https://github.com/madeinoz67/lldap-cli/releases/download/v#{version}/lldap-cli-linux-arm64.tar.gz"
                 sha256 "SHA_LINUX_ARM64_PLACEHOLDER"
 
                 def install
@@ -336,7 +347,7 @@ jobs:
                 end
               end
               on_intel do
-                url "https://github.com/madeinoz67/lldap-cli/releases/download/v#{version}/lldap-cli-linux-x64"
+                url "https://github.com/madeinoz67/lldap-cli/releases/download/v#{version}/lldap-cli-linux-x64.tar.gz"
                 sha256 "SHA_LINUX_X64_PLACEHOLDER"
 
                 def install
