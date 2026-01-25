@@ -1,5 +1,6 @@
 import { readFileSync, existsSync } from 'fs';
 import type { Config } from './types';
+import { ConfigError } from './errors';
 
 const DEFAULT_CONFIG: Config = {
   httpUrl: 'http://localhost:17170',
@@ -115,7 +116,7 @@ export function buildConfig(cliOptions: Partial<Config> = {}): Config {
   if (!config.token && !config.refreshToken) {
     // Username required for login
     if (!config.username) {
-      throw new Error('Username is required. Set via -D option, LLDAP_USERNAME env var, or config file.');
+      throw new ConfigError('Username is required. Set via -D option, LLDAP_USERNAME env var, or config file.');
     }
   }
 

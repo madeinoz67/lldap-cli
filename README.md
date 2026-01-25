@@ -260,6 +260,32 @@ console.log(users);
 await client.cleanup();
 ```
 
+## Exit Codes
+
+The CLI uses standard BSD sysexits.h exit codes for scripting:
+
+| Code | Name | Description |
+|------|------|-------------|
+| 0 | SUCCESS | Command completed successfully |
+| 1 | ERROR | General/unknown error |
+| 64 | USAGE | Invalid arguments or usage |
+| 69 | UNAVAILABLE | Service unavailable (server down) |
+| 74 | IOERR | I/O error (file not found) |
+| 75 | TEMPFAIL | Temporary failure (rate limited) |
+| 77 | NOPERM | Authentication/authorization failed |
+| 78 | CONFIG | Configuration error |
+
+Example scripting usage:
+```bash
+lldap-cli login -p
+case $? in
+  0)  echo "Login successful" ;;
+  77) echo "Authentication failed" ;;
+  78) echo "Configuration error - check username/URL" ;;
+  *)  echo "Other error: $?" ;;
+esac
+```
+
 ## Security Features
 
 This CLI includes comprehensive security hardening:

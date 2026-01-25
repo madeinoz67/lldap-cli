@@ -14,6 +14,8 @@ import {
   formatList,
 } from './formatters';
 import type { Config, MutationType, AttributeType } from './types';
+import { CliError } from './errors';
+import { ExitCode } from './exitCodes';
 
 // Load .env file if it exists (Bun doesn't auto-load .env in all cases)
 function loadEnvFile(): void {
@@ -48,7 +50,7 @@ let globalOptions: Partial<Config> = {};
 program
   .name('lldap-cli')
   .description('CLI tool for managing LLDAP (Lightweight LDAP) users, groups, and schema')
-  .version('1.0.1')
+  .version('1.0.2')
   .option('-H, --http-url <url>', 'HTTP base URL of the LLDAP management interface')
   .option('-D, --username <username>', 'Username of the admin account')
   .option('-t, --token <token>', 'Authentication token (prefer LLDAP_TOKEN env var)')
@@ -89,7 +91,7 @@ program
         const pwd = await readPassword();
         if (!pwd) {
           console.error('ERROR: No password provided');
-          process.exit(1);
+          process.exit(ExitCode.USAGE);
         }
         globalOptions.password = pwd;
       } else if (opts.password) {
@@ -143,7 +145,7 @@ program
       const config = buildConfig(globalOptions);
       if (!config.refreshToken) {
         console.error('ERROR: A refresh token is not available for logout.');
-        process.exit(1);
+        process.exit(ExitCode.CONFIG);
       }
 
       const client = new LldapClient(config);
@@ -258,7 +260,7 @@ userCommand
       if (attribute === 'password') {
         if (mutation !== 'set') {
           console.error(`ERROR: Mutation ${mutation} not supported for attribute password. Use set instead.`);
-          process.exit(1);
+          process.exit(ExitCode.USAGE);
         }
         let password = value;
         if (!password) {
@@ -855,12 +857,18 @@ async function readPassword(): Promise<string> {
 }
 
 function handleError(error: unknown): never {
-  if (error instanceof Error) {
+  let exitCode = ExitCode.ERROR;
+
+  if (error instanceof CliError) {
+    console.error(`ERROR: ${error.message}`);
+    exitCode = error.exitCode;
+  } else if (error instanceof Error) {
     console.error(`ERROR: ${error.message}`);
   } else {
     console.error('ERROR: An unknown error occurred');
   }
-  process.exit(1);
+
+  process.exit(exitCode);
 }
 
 // Run the CLI

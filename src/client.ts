@@ -1,6 +1,7 @@
 import { readFileSync, existsSync } from 'fs';
 import { resolve, normalize } from 'path';
 import type { Config, AuthTokens, GraphQLResponse } from './types';
+import { AuthError, ConfigError, UsageError, ServiceError, TempError, IOError } from './errors';
 
 // Audit log levels
 type AuditLevel = 'info' | 'warn' | 'error' | 'security';
@@ -75,7 +76,7 @@ export class LldapClient {
       // Clear tokens on timeout
       this.token = undefined;
       this.refreshToken = undefined;
-      throw new Error('Session timed out due to inactivity. Please re-authenticate.');
+      throw new AuthError('Session timed out due to inactivity. Please re-authenticate.');
     }
 
     this.lastActivityTime = now;
@@ -87,7 +88,7 @@ export class LldapClient {
   private validateInputLength(value: string, fieldName: string, maxLength: number = LldapClient.MAX_INPUT_LENGTH): void {
     if (value.length > maxLength) {
       this.audit('warn', 'input_length_exceeded', { field: fieldName, length: value.length, max: maxLength });
-      throw new Error(`${fieldName} exceeds maximum length of ${maxLength} characters`);
+      throw new UsageError(`${fieldName} exceeds maximum length of ${maxLength} characters`);
     }
   }
 
@@ -97,7 +98,7 @@ export class LldapClient {
   validateUsername(username: string): void {
     this.validateInputLength(username, 'username', LldapClient.MAX_USERNAME_LENGTH);
     if (!/^[a-zA-Z0-9_.-]+$/.test(username)) {
-      throw new Error('Username contains invalid characters. Only alphanumeric, underscore, dot, and hyphen allowed.');
+      throw new UsageError('Username contains invalid characters. Only alphanumeric, underscore, dot, and hyphen allowed.');
     }
   }
 
@@ -108,7 +109,7 @@ export class LldapClient {
     this.validateInputLength(email, 'email', LldapClient.MAX_EMAIL_LENGTH);
     // Basic email validation
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      throw new Error('Invalid email format');
+      throw new UsageError('Invalid email format');
     }
   }
 
@@ -158,14 +159,14 @@ export class LldapClient {
 
     // Prevent path traversal
     if (normalized.includes('..')) {
-      throw new Error('Invalid file path: path traversal detected');
+      throw new UsageError('Invalid file path: path traversal detected');
     }
 
     // If an allowed directory is specified, ensure the file is within it
     if (allowedDir) {
       const allowedResolved = resolve(allowedDir);
       if (!normalized.startsWith(allowedResolved)) {
-        throw new Error(`Invalid file path: must be within ${allowedDir}`);
+        throw new UsageError(`Invalid file path: must be within ${allowedDir}`);
       }
     }
 
@@ -185,7 +186,7 @@ export class LldapClient {
         if (error instanceof Error && error.message.includes('429')) {
           this.rateLimitRetryCount++;
           if (this.rateLimitRetryCount >= LldapClient.MAX_RATE_LIMIT_RETRIES) {
-            throw new Error('Rate limit exceeded. Please try again later.');
+            throw new TempError('Rate limit exceeded. Please try again later.');
           }
           const backoff = LldapClient.RATE_LIMIT_BACKOFF_MS * Math.pow(2, this.rateLimitRetryCount - 1);
           console.error(`Rate limited. Retrying in ${backoff}ms... (attempt ${this.rateLimitRetryCount}/${LldapClient.MAX_RATE_LIMIT_RETRIES})`);
@@ -195,7 +196,7 @@ export class LldapClient {
         }
       }
     }
-    throw new Error('Rate limit exceeded. Please try again later.');
+    throw new TempError('Rate limit exceeded. Please try again later.');
   }
 
   /**
@@ -208,7 +209,7 @@ export class LldapClient {
       const pass = password || this.config.password;
 
       if (!user || !pass) {
-        throw new Error('Username and password are required for login');
+        throw new ConfigError('Username and password are required for login');
       }
 
       // Validate input lengths
@@ -225,7 +226,7 @@ export class LldapClient {
 
       if (response.status === 429) {
         this.audit('warn', 'login_rate_limited', { username: user });
-        throw new Error('429 Rate limit exceeded');
+        throw new TempError('429 Rate limit exceeded');
       }
 
       if (!response.ok) {
@@ -233,7 +234,7 @@ export class LldapClient {
         this.audit('security', 'login_failed', { username: user, status: response.status });
         // Sanitize error to avoid credential leakage
         const sanitizedText = text.replace(/password[=:]\S+/gi, 'password=[REDACTED]');
-        throw new Error(`Login failed: ${sanitizedText}`);
+        throw new AuthError(`Login failed: ${sanitizedText}`);
       }
 
       const data = await response.json();
@@ -253,7 +254,7 @@ export class LldapClient {
    */
   async refresh(): Promise<string> {
     if (!this.refreshToken) {
-      throw new Error('Refresh token is required');
+      throw new AuthError('Refresh token is required');
     }
 
     const url = `${this.config.httpUrl}${this.config.endpoints.refresh}`;
@@ -263,7 +264,7 @@ export class LldapClient {
 
     if (!response.ok) {
       const text = await response.text();
-      throw new Error(`Token refresh failed: ${text}`);
+      throw new AuthError(`Token refresh failed: ${text}`);
     }
 
     const data = await response.json();
@@ -276,7 +277,7 @@ export class LldapClient {
    */
   async logout(): Promise<void> {
     if (!this.refreshToken) {
-      throw new Error('Refresh token is required for logout');
+      throw new AuthError('Refresh token is required for logout');
     }
 
     const url = `${this.config.httpUrl}${this.config.endpoints.logout}`;
@@ -343,7 +344,7 @@ export class LldapClient {
         const validatedPath = this.validateFilePath(file);
 
         if (!existsSync(validatedPath)) {
-          throw new Error(`File not found: ${file}`);
+          throw new IOError(`File not found: ${file}`);
         }
 
         const fileContent = readFileSync(validatedPath);
@@ -376,18 +377,18 @@ export class LldapClient {
       });
 
       if (response.status === 401) {
-        throw new Error('Authentication failed. Token may be expired. Try logging in again.');
+        throw new AuthError('Authentication failed. Token may be expired. Try logging in again.');
       }
 
       if (response.status === 429) {
-        throw new Error('429 Rate limit exceeded');
+        throw new TempError('429 Rate limit exceeded');
       }
 
       if (!response.ok) {
         const text = await response.text();
         // Sanitize error message to avoid leaking sensitive info
         const sanitizedText = text.replace(/token[=:]\S+/gi, 'token=[REDACTED]');
-        throw new Error(`GraphQL request failed (${response.status}): ${sanitizedText}`);
+        throw new ServiceError(`GraphQL request failed (${response.status}): ${sanitizedText}`);
       }
 
       const result: GraphQLResponse<T> = await response.json();
@@ -397,11 +398,11 @@ export class LldapClient {
         const sanitizedErrors = result.errors.map((e) =>
           e.message.replace(/token[=:]\S+/gi, 'token=[REDACTED]')
         );
-        throw new Error(`GraphQL error: ${sanitizedErrors.join(', ')}`);
+        throw new ServiceError(`GraphQL error: ${sanitizedErrors.join(', ')}`);
       }
 
       if (!result.data) {
-        throw new Error('No data returned from GraphQL query');
+        throw new ServiceError('No data returned from GraphQL query');
       }
 
       return result.data;
