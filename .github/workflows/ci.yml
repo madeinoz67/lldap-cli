@@ -164,13 +164,15 @@ jobs:
           bun build ./src/cli.ts --compile --outfile lldap-cli-linux-arm64 --target bun-linux-arm64
           bun build ./src/cli.ts --compile --outfile lldap-cli-darwin-x64 --target bun-darwin-x64
           bun build ./src/cli.ts --compile --outfile lldap-cli-darwin-arm64 --target bun-darwin-arm64
+          bun build ./src/cli.ts --compile --outfile lldap-cli-windows-x64.exe --target bun-windows-x64
 
-      - name: Create tar.gz archives
+      - name: Create archives
         run: |
           tar -czf lldap-cli-linux-x64.tar.gz lldap-cli-linux-x64
           tar -czf lldap-cli-linux-arm64.tar.gz lldap-cli-linux-arm64
           tar -czf lldap-cli-darwin-x64.tar.gz lldap-cli-darwin-x64
           tar -czf lldap-cli-darwin-arm64.tar.gz lldap-cli-darwin-arm64
+          zip lldap-cli-windows-x64.zip lldap-cli-windows-x64.exe
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
@@ -181,6 +183,7 @@ jobs:
             lldap-cli-linux-arm64.tar.gz
             lldap-cli-darwin-x64.tar.gz
             lldap-cli-darwin-arm64.tar.gz
+            lldap-cli-windows-x64.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

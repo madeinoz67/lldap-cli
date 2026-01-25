@@ -62,7 +62,12 @@ sudo mv lldap-cli-darwin-x64 /usr/local/bin/lldap-cli
 curl -LO https://github.com/madeinoz67/lldap-cli/releases/latest/download/lldap-cli-darwin-arm64
 chmod +x lldap-cli-darwin-arm64
 sudo mv lldap-cli-darwin-arm64 /usr/local/bin/lldap-cli
+
+# Windows x64 (untested)
+# Download lldap-cli-windows-x64.zip from the releases page and extract
 ```
+
+> **Note:** Windows builds are provided but currently untested. Please report any issues.
 
 ### From Source
 
