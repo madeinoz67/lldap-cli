@@ -177,10 +177,6 @@ jobs:
         with:
           body_path: RELEASE_NOTES.md
           files: |
-            lldap-cli-linux-x64
-            lldap-cli-linux-arm64
-            lldap-cli-darwin-x64
-            lldap-cli-darwin-arm64
             lldap-cli-linux-x64.tar.gz
             lldap-cli-linux-arm64.tar.gz
             lldap-cli-darwin-x64.tar.gz
